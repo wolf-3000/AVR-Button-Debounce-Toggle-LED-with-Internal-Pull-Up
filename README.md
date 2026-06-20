@@ -1,51 +1,40 @@
-# AVR Button Debounce — Toggle LED with Internal Pull-Up
+# AVR-Button-Debounce-LED-Toggle
 
-A minimal bare-metal AVR example that toggles an LED with a **pushbutton** using **software debounce** and **millis()** timing. No external resistor needed — the internal pull-up on the input pin is used.
+## Overview
 
-> Target: ATmega328P (Arduino Uno/Nano) @ 16 MHz
+This bare-metal AVR sketch toggles an LED with a pushbutton using **software debounce** and **millis()** timing. The internal pull-up on the input pin means no external resistor is needed.
 
----
+- Press the button to toggle the LED on/off
+- **50 ms debounce** via `millis()` — samples the button at fixed intervals to ignore contact bounce
+- **Falling-edge detection** — only toggles on press-down, not on hold or release
 
-## What it does
+## Hardware
 
-- Press the button connected to **PD3** (Arduino digital pin **3**) to toggle the LED on **PD4** (pin **4**).
-- **50 ms software debounce** prevents flickering from mechanical contact bounce.
-- Detects the **falling edge** (press-down), so holding the button does not toggle repeatedly.
+| Component | Notes |
+|-----------|-------|
+| Arduino Nano / Uno | ATmega328P @ 16 MHz |
+| LED | Any standard LED |
+| 220 Ω resistor | Current limiter for LED |
+| Pushbutton | Tactile or any momentary switch |
 
----
+## Pinout / Wiring
 
-## Wiring
+| Arduino Pin | Connected To | Purpose |
+|-------------|--------------|---------|
+| 3 (PD3) | Button → GND | Input with internal pull-up |
+| 4 (PD4) | LED anode → 220 Ω → GND | Output to LED |
 
-No external resistor needed — the code enables the **internal pull-up** on PD3.
+> No external resistor on the button — `PORTD |= (1 << PD3)` enables the internal pull-up, keeping `PD3` HIGH when open and LOW when pressed.
 
-```
-PD3 (pin 3) ──────┬─── Button ───┬─── GND
-                   │              │
-PD4 (pin 4) ───[220 Ω]───►|─── GND
-```
+## Build Photos
 
-- One side of the button to **PD3**, the other side to **GND**.
-- LED anode (long leg) to **PD4** via 220 Ω, cathode to **GND**.
-
----
-## Picture
-<img width="1280" height="1280" alt="picture_" src="https://github.com/user-attachments/assets/5653b0a9-8076-40fb-a14b-a8d844d5617a" />
-
-
----
-
-## How it works (brief)
-
-| Part | What it does |
-|------|-------------|
-| Internal pull-up (`PORTD |= (1 << PD3)`) | Keeps PD3 **HIGH** when button is open; goes **LOW** when pressed |
-| `millis()` debounce | Only samples the button every **50 ms** to ignore contact bounce |
-| Falling edge check (`prevReading && !currentReading`) | Toggles LED only on **press-down**, not on release or hold |
-
----
+<img width="1280" height="1280" alt="picture_" src="https://github.com/user-attachments/assets/82b5c185-03e6-4b97-925d-5c6b8b3a35c0" />
 
 
+## How It Works
 
-## License
-
-MIT
+- `DDRD &= ~(1 << PD3)` sets `PD3` as an **input**; `PORTD |= (1 << PD3)` enables the **internal pull-up**.
+- The loop reads `millis()` and only samples the button every **50 ms** (`debounceInterval`), filtering out mechanical bounce.
+- `PIND & (1 << PD3)` reads the current pin state; `prevReading && !currentReading` detects the **falling edge** (button press).
+- On falling edge, `ledState` is flipped and written to `PD4`.
+- Holding the button does not re-toggle — the next press must begin from a released state.
